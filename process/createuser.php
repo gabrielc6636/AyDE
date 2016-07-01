@@ -1,10 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U411207
- * Date: 16/05/2016
- * Time: 15:55
- */
+
+//proceso de creacion y auto-asignacion de nuevos desarrolladores a los proyectos INTERNO y AUSENCIA
 session_start();
 require_once '../includes/db.php';
 
@@ -27,7 +23,7 @@ if(isset($_GET['user'],$_GET['sueldo']) AND !empty($_GET['user']) AND !empty([$_
     $requete->execute([$_GET['user'],$_GET['sueldo'], $costo, round($costo/4)]);
     $lastOrderId = $pdo->lastInsertId();
     
-    $reqAsocProyect = $pdo->prepare('INSERT INTO asignacion (id_proyecto, id_usuario) VALUES (13, :userId), (14, :userId)'); // ACA SE MODIFICAN LOS PROYECTO AUSENCIAS Y CAPA INTERNA
+    $reqAsocProyect = $pdo->prepare('INSERT INTO asignacion (id_proyecto, id_usuario) VALUES (1, :userId), (2, :userId)'); // ACA SE MODIFICAN LOS PROYECTO AUSENCIAS Y CAPA INTERNA
     $reqAsocProyect->execute(["userId" => $lastOrderId]);
 
     $_SESSION['createUser'] = "<h5><label class='label label-success'>Usuario creado correctamente <span class='glyphicon glyphicon-thumbs-up'></span></label></h5>";

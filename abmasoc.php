@@ -1,10 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U411207
- * Date: 12/05/2016
- * Time: 15:43
- */
+
+//pantalla de creacion de proyectos (tipo desarrollo y capacitacion externa), creacion de usuarios (tipo desarrollador) y asignacion de usuarios a proyectos (solo desarrollo y capacitacion externa)
+
 session_start();
 include_once 'includes/functions.php';
 sessioncheck(8);
@@ -20,8 +17,10 @@ $proyectos = $requete->fetchAll();
 $reTipoProyecto = $pdo->query("SELECT * FROM tipo_proyecto WHERE tipo_proyecto.id_tipo not in (1,2)");
 $tipoProyectos = $reTipoProyecto->fetchAll();
 
+//asociacion
+
 if (isset($_GET['proyecto'],$_GET['asociar'])) {
-    // Los posibles son tipo 3, 4 y 5
+
     $requete = $pdo->prepare('SELECT usuarios.id_usuario, usuarios.usuario FROM usuarios
                               WHERE usuarios.id_usuario NOT IN
                               (
@@ -29,7 +28,9 @@ if (isset($_GET['proyecto'],$_GET['asociar'])) {
                                   FROM asignacion
                                   LEFT JOIN proyectos ON proyectos.id_proyecto = asignacion.id_proyecto
                                   WHERE proyectos.id_proyecto = ?
-                              )');
+                              )
+                              AND usuarios.user_rol < 5');
+
     $requete->execute([$_GET['proyecto']]);
     $usuarios = $requete->fetchAll();
     if (empty($usuarios)) {
@@ -37,12 +38,12 @@ if (isset($_GET['proyecto'],$_GET['asociar'])) {
         header('Location: abmasoc.php');
         exit();
     }
-    // falta la tabla que muestra los usuarios que estan afectados
+   
 }
 
 if (isset($_GET['usuario'],$_GET['proyecto'],$_GET['asignacion'])) {
     $requete = $pdo->prepare('INSERT INTO asignacion SET asignacion.id_proyecto = ?, asignacion.id_usuario = ?');
-    // afectar obligaroriamente a los proyectos tipo 1 y 2
+  
 
     $requete->execute([$_GET['proyecto'],$_GET['usuario']]);
     $_SESSION['imposibleAsignar'] = "<h5><label class='label label-success'>Afectación satisfactoria</label></h5>";
@@ -58,8 +59,8 @@ require_once 'includes/header.php'; ?>
         <div class="col-md-6">
             <form class="form-horizontal" method="get">
                 <fieldset>
-                    <legend>Asignacion de proyectos a usuarios</legend>
-                    <?php if(isset($_SESSION['imposibleAsignar'])) {echo $_SESSION['imposibleAsignar'];}?>
+                    <legend>Asignacion de proyectos a usuarios</legend> <!-- Logica de asignacion de usuarios a PR -->
+                    <?php if(isset($_SESSION['imposibleAsignar'])) {echo $_SESSION['imposibleAsignar'];}?> 
                     <input type="hidden" value="ok" name="asociar"/>
                     <div class="form-group">
                         <label for="proyecto" class="col-lg-2 control-label">Proyecto</label>
@@ -103,7 +104,7 @@ require_once 'includes/header.php'; ?>
         <div class="col-md-6">
             <form class="form-horizontal" method="get" action="process/createuser.php">
                 <fieldset>
-                <legend>Crear usuario</legend>
+                <legend>Crear usuario</legend> <!-- Logica de creacion de usuarios -->
                 <?php if(isset($_SESSION['createUser'])) {echo $_SESSION['createUser'];}?>
                 <div class="form-group">
                         <label for="user" class="col-lg-2 control-label">Usuario</label>
@@ -125,15 +126,13 @@ require_once 'includes/header.php'; ?>
                 </div>
                 </fieldset>
             </form>
-            <!-- ************* FORMULARIO DE DESAFECTACION DE USUARIOS ************ -->
-            <!-- boton cambia de siguiente a "QUITAR" -->
         </div>
     </div>
     <div class="row">
         <div class="col-md-6">
             <form class="form-horizontal" method="get" action="process/createProyect.php">
                 <fieldset>
-                <legend>Crear Proyecto</legend>
+                <legend>Crear Proyecto</legend>  <!-- Logica de creacion de proyectos -->
                 <?php if(isset($_SESSION['createProyect'])) {echo $_SESSION['createProyect'];}?>
                     <div class="form-group">
                         <label for="proyect" class="col-lg-2 control-label">Proyecto</label>

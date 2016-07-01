@@ -1,10 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U411207
- * Date: 20/05/2016
- * Time: 12:58
- */
+
+//Login + pantalla inicial
+
 session_start();
 include_once 'includes/functions.php';
 sessionTimeOut();
@@ -12,6 +9,8 @@ require_once 'includes/db.php';
 
 $reqUsers = $pdo->query("SELECT * FROM usuarios");
 $usuariosParaLogin = $reqUsers->fetchAll();
+
+//Login
 
 if (isset($_POST['submit']) AND !empty($_POST['submit'])) {
     if (!empty($_POST['user']) AND !empty($_POST['password'])) {
@@ -69,7 +68,7 @@ require_once 'includes/header.php';
                         </div>
                     </fieldset>
                 </form>
-                <table class="table table-striped">
+                <table class="table table-striped hidden">
                     <thead>
                         <th>Id</th>
                         <th>Usuario</th>
@@ -97,8 +96,8 @@ require_once 'includes/header.php';
             <div class="jumbotron">
                 <h3>Bienvenido</h3>
                 <p>Por favor seleccionar del menu lo que se desee hacer</p>
-                <?php if ($_SESSION['user']->user_rol < 8) : ?>
-                <a class="btn btn-lg btn-default" href="cargaHoras.php"><span class="glyphicon glyphicon-hand-right"></span>  Ir a cargar horas <span class="glyphicon glyphicon-briefcase"></span></a>
+                <?php if ($_SESSION['user']->user_rol < 5) : ?>
+                <a class="btn btn-lg btn-default" href="cargaHoras.php"><span class="glyphicon glyphicon-hand-right"></span>  Ir a cargar esfuerzo <span class="glyphicon glyphicon-briefcase"></span></a>
                 <?php endif; ?>
                 <a class="btn btn-lg btn-info" href="logout.php">Desloguease? <span class="glyphicon glyphicon-off"></span></a>
             </div>
