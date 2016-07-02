@@ -1,11 +1,34 @@
 <?php
+
+//pantalla de carga de horas (solo accesible por desarrolladores)
+
+unset($error);
+
 session_start();
+$semanaActual = array(
+    26 => 2,
+    27 => 0,
+    28 => 1,
+    29 => 2,
+    30 => 2,
+    31 => 0,
+    32 => 1,
+    33 => 2,
+    34 => 2,
+    35 => 2,
+    36 => 0,
+    37 => 1,
+    38 => 2,
+    39 => 2
+    );
+
 include_once 'includes/functions.php';
 sessionTimeOut();
 sessioncheck(1);
 
 include_once 'includes/db.php';
 $semana = date('W');
+
 $mostrarTabla = false;
 $requete = $pdo->query('SELECT * FROM usuarios');
 $users = $requete->fetchAll();
@@ -14,9 +37,6 @@ $req = 'SELECT proyectos.proyecto, proyectos.id_proyecto, cargahoras.horas, carg
                             LEFT JOIN proyectos ON proyectos.id_proyecto = cargahoras.id_proyecto
                             LEFT JOIN semanas ON semanas.id_semana = cargahoras.id_semana
                             WHERE cargahoras.id_usuario = ? AND cargahoras.id_semana = ?';
-//    echo '<pre>';
-//    print_r($_GET);
-//    echo '</pre>';
 
 if (isset($_SESSION['user']->id_usuario)) {
     $requeteProyectos = $pdo->prepare('SELECT proyectos.proyecto, proyectos.id_proyecto, usuarios.usuario FROM asignacion
@@ -39,25 +59,50 @@ if (isset($_SESSION['user']->id_usuario,$_GET['semana'])) {
     $requeteHorasTotal = $pdo->prepare('SELECT sum(cargahoras.horas) as horas FROM cargahoras WHERE cargahoras.id_usuario = ? AND cargahoras.id_semana = ?');
     $requeteHorasTotal->execute([$_SESSION['user']->id_usuario,$_GET['semana']]);
     $cantHoras = $requeteHorasTotal->fetch();
+    $cantEsfuerzo = $cantHoras->horas * 100 / 40;
+
     $tabla = $requete->fetchAll();
     $queryCantDisponible = $pdo->prepare('SELECT semanas.horas_habiles FROM semanas WHERE id_semana = ?');
     $queryCantDisponible->execute([$_GET['semana']]);
     $horasDisponibles = $queryCantDisponible->fetch();
+
+	if($cantHoras->horas >= 40){
+	$error = "disabled";
+	}
+	
 }
 
-if (!empty($_SESSION['user']->id_usuario) AND !empty($_GET['proyecto']) AND !empty($_GET['horas']) AND !empty($_GET['carga'])){
+if (!empty($_SESSION['user']->id_usuario) AND !empty($_GET['proyecto']) AND !empty($_GET['semana'])AND !empty($_GET['horas']) AND !empty($_GET['carga'])){
     $mostrarTabla = true;
     // carga * 40 / 100 e insertarlo
-    $carga = $_GET['horas'] * 40 / 100;
+    $carga = $_GET['horas'];
+    $carga = $carga * 40 / 100;
+    $requeteHorasTotal = $pdo->prepare('SELECT sum(cargahoras.horas) as horas FROM cargahoras WHERE cargahoras.id_usuario = ? AND cargahoras.id_semana = ?');
+    $requeteHorasTotal->execute([$_SESSION['user']->id_usuario,$_GET['semana']]);
+    $cantHoras = $requeteHorasTotal->fetch();
+
+    if ($carga > (40 - $cantHoras->horas)) {
+        $proyect = $_GET['proyecto'];
+        $week = $_GET['semana'];
+        $_SESSION['alertaCargaMAL'] = "Ojo con lo que se pone FORROOO";
+        header("Location: cargaHoras.php?proyecto=".$proyect."&semana=".$week);
+        exit();
+        
+    }
     $requeteInsert = $pdo->prepare('INSERT INTO cargahoras SET id_proyecto = ?, id_usuario = ?, id_semana = ?, horas = ? ');
-    $requeteInsert->execute([$_GET['proyecto'],$_SESSION['user']->id_usuario,$_GET['semana'],$_GET['horas']]);
+    $requeteInsert->execute([$_GET['proyecto'],$_SESSION['user']->id_usuario,$_GET['semana'],$carga]);
     $requete = $pdo->prepare($req);
     $requete->execute([$_SESSION['user']->id_usuario,$_GET['semana']]);
     $tabla = $requete->fetchAll();
     $requeteHorasTotal = $pdo->prepare('SELECT sum(cargahoras.horas) as horas FROM cargahoras WHERE cargahoras.id_usuario = ? AND cargahoras.id_semana = ?');
     $requeteHorasTotal->execute([$_SESSION['user']->id_usuario,$_GET['semana']]);
     $cantHoras = $requeteHorasTotal->fetch();
-}
+	
+	if($cantHoras->horas >= 40){
+	$error = "disabled";
+	}
+	
+	}
 
 include_once 'includes/header.php'
 ?>
@@ -72,10 +117,17 @@ include_once 'includes/header.php'
                             <label for="semana" class="col-lg-2 control-label">Semana</label>
                             <div class="col-lg-10">
                                 <select name="semana" id="semana" <?php if (isset($_GET['semana'])) {echo "disabled"; } ?>>
-                                <?php for($i = $semana ; $i > $semana-3 ; $i--):?>
-                                    <option value="<?=$i?>"<?php if(isset($_GET['semana']) AND $_GET['semana'] == $i) {echo ' selected'; } ?>>S<?=$i?></option>
-                                <?php endfor;?>
-                            </select>
+                                    <?php if ($semanaActual[$semana] == 0) :?> <!-- Lógica de definición de 1ra semana del mes -->
+                                        <option value="<?=$semana;?>"<?php if(isset($_GET['semana']) AND $_GET['semana'] == $semana) {echo ' selected'; } ?>>S<?=$semana;?></option>
+                                    <?php elseif ($semanaActual[$semana] == 1 ) :?>
+                                        <option value="<?=$semana;?>"<?php if(isset($_GET['semana']) AND $_GET['semana'] == $semana) {echo ' selected'; } ?>>S<?=$semana;?></option>
+                                        <option value="<?=$semana-1;?>"<?php if(isset($_GET['semana']) AND $_GET['semana'] == $semana-1) {echo ' selected'; } ?>>S<?=$semana-1;?></option>
+                                    <?php else :?>
+                                        <option value="<?=$semana;?>" <?php if(isset($_GET['semana']) AND $_GET['semana'] == $semana) {echo ' selected'; } ?>>S<?=$semana;?></option>
+                                        <option value="<?=$semana-1;?>" <?php if(isset($_GET['semana']) AND $_GET['semana'] == $semana-1) {echo ' selected'; } ?>>S<?=$semana-1;?></option>
+                                        <option value="<?=$semana-2;?>" <?php if(isset($_GET['semana']) AND $_GET['semana'] == $semana-2) {echo ' selected'; } ?>>S<?=$semana-2;?></option>
+                                    <?php endif;?>
+                                </select>
                                 <?php if (isset($_GET['semana'])) :?>
                                     <a href="cargaHoras.php">Cambiar semana</a>
                                 <?php endif;?>
@@ -101,10 +153,18 @@ include_once 'includes/header.php'
                         <div class="form-group">
                             <label for="horas" class="col-lg-2 control-label">% Esfuerzo</label>
                             <div class="col-lg-8">
-                                <?php if ($cantHoras->horas < $horasDisponibles->horas_habiles) :?>
-                                    <input style="width: 55px;" type="number" name="horas" id="horas" min="1" max="<?php if (isset($horasDisponibles)) { echo $horasDisponibles->horas_habiles - $cantHoras->horas;} else { echo 40; }?>" value="<?php if(isset($_GET['horas'])) {echo $_GET['horas']; } else echo 1?>" <?php if (isset($_GET['carga'])) { echo "disabled"; } ?>>
+                                <?php if ($cantHoras->horas < 40) :?> <!-- registro de esfuerzo -->
+                                    <select name="horas" <?php if (isset($_GET['horas'])) :?> disabled <?php endif;?>>
+                                        <?php for ($i = 1 ; $i <= 20 ; $i ++) :?> <!-- relleno de desplegable de carga -->
+                                            <option value="<?=$i*5;?>"><?=$i*5;?></option>
+                                        <?php endfor;?>
+                                    </select>
                                     <br>
-                                    <h5><label class="label label-info">% de esfuerzo restante <?=$horasDisponibles->horas_habiles - $cantHoras->horas;?></label></h5>
+                                    <h5><label class="label label-info">% de esfuerzo restante <?= 100 - ($cantHoras->horas * 100 / 40);?></label></h5>
+                                        <?php if (isset($_SESSION['alertaCargaMAL'])): ?> <!-- alerta por carga superior -->
+                                            <label class="label label-danger">Se ha seleccionado un carga superior a lo permitido</label>
+                                            <?php unset($_SESSION['alertaCargaMAL']);?>
+                                        <?php endif;?>
                                     <?php if (isset($_GET['carga'])) :?>
                                         <a href="cargaHoras.php?semana=<?=$_GET['semana']?>">Nueva carga</a>
                                     <?php endif;?>
@@ -116,15 +176,23 @@ include_once 'includes/header.php'
                     <?php endif; ?>
                     <?php if (!isset($_SESSION['user']->id_usuario,$_GET['proyecto'],$_GET['semana'],$_GET['horas'],$_GET['carga'])):?>
                     <div class="form-group">
-                        <div class="col-lg-10 col-lg-offset-2">
+                        <div class="col-lg-10 col-lg-offset-2"> <!-- lógica para mostrar/ocultar/deshabilitar botones -->
                             <?php if (isset($_SESSION['user']->id_usuario,$_GET['semana'])) :?>
                                 <input type="hidden" name="semana" value="<?=$_GET['semana'];?>">
                             <?php endif;?>
                             <?php if (isset($_GET['proyecto'])) :?>
                                 <input type="hidden" name="proyecto" value="<?=$_GET['proyecto'];?>">
                             <?php endif;?>
-                            <a href="cargaHoras.php" class="btn btn-default">Cancel</a>
-                            <button type="submit" class="btn btn-primary" <?php if (isset($_GET['proyecto']) AND $cantHoras->horas < $horasDisponibles->horas_habiles) { echo 'name="carga" value="ok"'; } else { echo '';}?>>Siguiente</button>
+                                <a href="cargaHoras.php" class="btn btn-default">Cancel</a>
+                            <?php if ((isset($_GET['semana']) AND isset($error)) OR (isset($_GET['semana']) AND isset($_GET['proyecto']) AND isset($error))): ?>
+                                <button type="submit" class="btn btn-primary" disabled="">Siguiente</button>
+                            <?php elseif (isset($_GET['proyecto']) AND isset($_GET['semana']) AND !isset($error)): ?> 
+                                <button type="submit" class="btn btn-primary" name="carga" value="ok">Siguiente</button>
+                            <?php elseif (isset($_GET['proyecto']) AND isset($_GET['semana'])) :?>
+                                <button type="submit" class="btn btn-primary">Siguiente</button>
+                            <?php else :?>
+                                <button type="submit" class="btn btn-primary">Siguiente</button>
+                            <?php endif;?>
                         </div>
                     </div>
                     <?php endif;?>

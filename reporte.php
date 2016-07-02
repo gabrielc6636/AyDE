@@ -1,14 +1,11 @@
     <?php
-/**
- * Created by PhpStorm.
- * User: U411207
- * Date: 16/05/2016
- * Time: 20:23
- */
+
+	//reporte de costos por proyecto
+	
 session_start();
 include_once 'includes/functions.php';
 sessionTimeOut();
-sessioncheck(8);
+sessioncheck(4);
 require_once 'includes/db.php';
 require_once 'includes/header.php';
 $meses = array(
@@ -45,7 +42,7 @@ if (isset($_GET['mes'],$_GET['submit']) AND !empty($_GET['mes']) AND !empty($_GE
     $queryProyectosConCarga = $pdo->prepare('SELECT distinct(proyectos.id_proyecto), proyectos.proyecto FROM proyectos
                                              INNER JOIN cargahoras ON cargahoras.id_proyecto = proyectos.id_proyecto
                                              INNER JOIN semanas ON semanas.id_semana = cargahoras.id_semana
-                                             WHERE semanas.mes = ? AND cargahoras.horas > 0');
+                                             WHERE semanas.mes = ? AND cargahoras.horas > 0 and proyectos.proyecto_id_tipo NOT IN (1,2)');
     $queryProyectosConCarga->execute([$mes]);
 
     // Cantidad de usuarios por proyecto
@@ -56,35 +53,7 @@ if (isset($_GET['mes'],$_GET['submit']) AND !empty($_GET['mes']) AND !empty($_GE
     $sumaDeHorasPorProyecto = $pdo->prepare("SELECT sum(cargahoras.horas)/40*100 as cargaTotal FROM cargahoras 
                                              WHERE cargahoras.id_usuario = ? AND cargahoras.id_semana = ? AND cargahoras.id_proyecto = ?");
     if ($queryProyectosConCarga->rowCount() > 0) { // Si en el mes seleccionado hay carga para proyectos continuar
-        /*
-        echo '<table class="table table-bordered">';
-        echo '<thead align="center">';
-        echo '<tr><th>Proyecto</th><th>Usuario</th>';
-        foreach ($semXmes as $key => $value) {
-            echo "<th>$value->semana</th>";
-        }
-        echo '</tr>';
-        echo '</thead>';
-        // ** Armado el body ** //
-        echo '<tbody>';
-        // Listar Proyecto
-        while ($proyecto = $queryProyectosConCarga->fetch()) {
-            $cantUsuarioPorPoryecto->execute([$proyecto->id_proyecto]);
-            echo '<tr><td rowspan="' . $cantUsuarioPorPoryecto->rowCount() . '">' . $proyecto->proyecto . '</td>';
-            while ($users = $cantUsuarioPorPoryecto->fetch()) {
-                echo '<td>' . $users->usuario . '</td>';
-                // Hago la suma de las horas
-                foreach ($semXmes as $key => $value) {
-                    $sumaDeHorasPorProyecto->execute([$users->id_usuario, $value->id_semana, $proyecto->id_proyecto]);
-                    while ($cargaTotal = $sumaDeHorasPorProyecto->fetch()) {
-                        echo "<td align='center'>$cargaTotal->cargaTotal</td>";
-                    }
-                }
-                echo '</tr>';
-            }
-        }
-        echo '</tbody>';
-        */
+  
 
         $totalProyecto = $pdo->prepare("SELECT proyectos.proyecto,
                                               CONCAT('$ ',round(sum(cargahoras.horas)/sum(semanas.horas_habiles)*sum(usuarios.costo_semanal),0)) AS Calculo,
@@ -94,7 +63,7 @@ if (isset($_GET['mes'],$_GET['submit']) AND !empty($_GET['mes']) AND !empty($_GE
                                               INNER JOIN proyectos ON proyectos.id_proyecto = cargahoras.id_proyecto
                                               INNER JOIN usuarios ON usuarios.id_usuario = cargahoras.id_usuario
                                               INNER JOIN tipo_proyecto ON tipo_proyecto.id_tipo = proyectos.proyecto_id_tipo
-                                            WHERE semanas.mes = ?
+                                            WHERE semanas.mes = ? and proyectos.proyecto_id_tipo not in (1,2)
                                             GROUP BY proyectos.proyecto");
         $totalProyecto->execute([$mes]);
         $totalCostoProyecto = $totalProyecto->fetchAll();
@@ -116,12 +85,12 @@ if (isset($_GET['mes'],$_GET['submit']) AND !empty($_GET['mes']) AND !empty($_GE
 
 }
 
+
 ?>
 <?php if (!isset($_GET['mes'])) :?>
 <div class="container">
     <div class="row">
-        <div class="col-md-6">
-            
+        <div class="col-md-6">            
             <form class="form-horizontal" method="get">
                 <fieldset>
                     <legend>Generar <?php if (isset($_GET['mes'])) {echo ' nuevo ';} ?>reporte</legend>

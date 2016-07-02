@@ -1,10 +1,15 @@
 <?php
+
+//tabla de gente asignada a proyectos
+
 session_start();
 include_once 'includes/functions.php';
 sessioncheck(8);
 require_once 'includes/db.php';
 
-$reqProyectos = $pdo->query('SELECT distinct(asignacion.id_proyecto), proyectos.proyecto, proyectos.proyecto_id_tipo FROM asignacion INNER JOIN proyectos ON proyectos.id_proyecto = asignacion.id_proyecto WHERE asignacion.id_proyecto not in (13,14)');
+//queries para definir proyectos de proyectos, cantidad gente por proyecto, desarrolladores
+
+$reqProyectos = $pdo->query('SELECT distinct(asignacion.id_proyecto), proyectos.proyecto, proyectos.proyecto_id_tipo FROM asignacion INNER JOIN proyectos ON proyectos.id_proyecto = asignacion.id_proyecto WHERE asignacion.id_proyecto not in (1,2)');
 $proyectosAsignados = $reqProyectos->fetchAll();
 
 $reqCountUsers = $pdo->prepare("SELECT count(asignacion.id_proyecto) AS Cant FROM asignacion WHERE id_proyecto = ?");

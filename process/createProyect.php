@@ -1,10 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: U411207
- * Date: 16/05/2016
- * Time: 15:55
- */
+
+//proceso de creacion de proyectos
+
 session_start();
 require_once '../includes/db.php';
 
